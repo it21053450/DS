@@ -1,0 +1,106 @@
+#Varray
+
+CREATE TYPE price_arr AS VARRAY(10) OF NUMBER(12,2); 
+
+#example 
+Create type excharray as varray(5) of varchar(12) 
+		/					
+		Create type share_t as object(
+cname varchar(12), 
+cprice number(6,2),
+exchanges excharray,
+dividend number(4,2), 
+earnings number(6,2))
+/
+
+# Creating a VARRAY
+Example: 
+create table shares of share_t(
+					  cname primary key);
+insert into shares values(‘BHP’, 10.50, 
+		excharray( ‘Sydney’ ,’New York’), 1.50, 3.20);
+
+#VARRAY Example 
+CREATE TYPE price_arr AS 
+	VARRAY(10) OF NUMBER(12,2)
+/
+CREATE TABLE pricelist (
+	pno integer, 
+	prices price_arr);
+
+INSERT INTO pricelist 
+	VALUES(1, price_arr(2.50,3.75,4.25));
+
+#Retrieving from a VARRAY
+SELECT * FROM pricelist;
+
+SELECT pno, s.COLUMN_VALUE price
+	FROM pricelist p, TABLE(p.prices) s;
+
+
+#Example: Nested Table Type
+CREATE TYPE BeerType AS OBJECT (
+	name	CHAR(20),
+	kind	CHAR(10),
+	colour CHAR(10))
+/
+CREATE TYPE BeerTableType AS 
+	TABLE OF BeerType
+/
+CREATE TABLE Manfs (
+			name CHAR(30),
+			addr	CHAR(50),
+			beers beerTableType)
+	NESTED TABLE beers STORE AS beer_table;
+
+#Storing Nested Tables
+Declare a storage of nested tuples in CREATE TABLE by:		
+	NESTED TABLE A  STORE AS R
+In previous example,
+NESTED TABLE beers STORE AS beer_table;
+
+
+#Nested Table Example 2
+CREATE TYPE proj_t AS OBJECT (
+		projno NUMBER,
+	  	projname VARCHAR (15)); 
+CREATE TYPE proj_list AS TABLE OF proj_t;
+CREATE TYPE employee_t AS OBJECT (
+		eno number, 
+		projects proj_list); 
+CREATE TABLE employees of employee_t (eno primary key)
+NESTED TABLE projects STORE AS employees_proj_table;
+
+#DML on Collections:
+INSERT INTO TABLE(SELECT e.projects 
+				     FROM employees e 
+				     WHERE e.eno = 1000) 
+   VALUES (103, 'Project Neptune');
+UPDATE TABLE(SELECT e.projects 
+			         FROM …) p 
+   SET p.projname = 'Project Pluto' 
+   WHERE p.projno = 103;
+DELETE TABLE(SELECT e.projects 
+			         FROM …) p
+   WHERE p.projno = 103; 
+
+#DML on Nested Tuples
+UPDATE employees e
+	SET e.projects = NULL 
+	WHERE e.eno = 1000; 
+
+UPDATE employees e
+	SET e.projects = proj_list(proj_t(103, 'Project Pluto'))
+	WHERE e.eno=1000;
+  
+  #Multilevel Collection Types Example
+  
+  CREATE TYPE sat_t AS OBJECT ( name VARCHAR2(20), orbit NUMBER);
+	/
+CREATE TYPE sat_ntt AS TABLE OF sat_t
+	/
+CREATE TYPE planet_t AS OBJECT ( name VARCHAR2(20), mass NUMBER, satellites sat_ntt)
+	/ 
+
+
+
