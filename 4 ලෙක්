@@ -1,0 +1,20 @@
+#Triggers on Object Tables
+
+CREATE TYPE location as OBJECT (campus VARCHAR2(20), building NUMBER, room NUMBER);
+CREATE TYPE staff as OBJECT(sid NUMBER, name VARCHAR2(100), address VARCHAR2(100), office location); 
+CREATE TABLE staff_tab OF staff (sid PRIMARY KEY); 
+
+#Example
+CREATE TABLE movement ( sid NUMBER, old_office location, new_office location );
+
+CREATE TRIGGER trig1 
+	BEFORE UPDATE OF office ON staff_tab 
+	FOR EACH ROW 
+	WHEN (new.office.campus = 'Bentley' )
+	BEGIN 
+		IF :new.office.building = 314 THEN 
+		 INSERT INTO movement VALUES (:old.sid,:old.office, :new.office); 
+	 END IF; 
+	END;
+  
+  
