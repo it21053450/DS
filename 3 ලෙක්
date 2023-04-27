@@ -1,0 +1,160 @@
+#Member Method
+CREATE TYPE MenuType AS OBJECT ( 
+   bar REF BarType, 
+   beer REF BeerType, 
+   price FLOAT, 
+   MEMBER FUNCTION priceInYen(rate IN FLOAT)
+      RETURN FLOAT
+)
+/
+
+#Example: Type Body
+CREATE TYPE BODY MenuType AS 
+MEMBER FUNCTION 
+priceInYen(rate FLOAT) 
+RETURN FLOAT IS 
+	BEGIN 
+		RETURN rate * SELF.price; 
+	END; 
+END; 
+/ 
+CREATE TABLE Sells OF MenuType; 
+
+#Adding a new method
+ALTER TYPE MenuType 
+     ADD MEMBER FUNCTION priceInUSD(rate FLOAT)
+     RETURN FLOAT CASCADE;
+     
+#Example of Method Use 
+SELECT s.beer.name, s.priceInYen(106.0) 
+FROM Sells s 
+WHERE s.bar.name = 'Joe''s Bar'; 
+
+#Map Method
+Ex:
+CREATE TYPE Rectangle_type AS OBJECT 
+( length NUMBER, 
+   width NUMBER, 
+  MAP MEMBER FUNCTION area RETURN NUMBER
+); 
+CREATE TYPE BODY Rectangle_type AS MAP MEMBER FUNCTION area RETURN NUMBER IS 
+	BEGIN 
+		RETURN length * width; 
+   END area; 
+END;
+
+#Order Methods
+CREATE TYPE Customer_typ AS OBJECT 
+	( id NUMBER, 
+	  name VARCHAR2(20), 
+	  addr VARCHAR2(30), 
+	  ORDER MEMBER FUNCTION match (c Customer_typ) RETURN INTEGER ); 
+	/ 
+
+
+#Methods on Nested Tables
+CREATE TYPE proj_t AS OBJECT (projno number,
+	Projname varchar(15));
+CREATE TYPE proj_list AS TABLE OF proj_t;
+CREATE TYPE emp_t AS OBJECT 
+    ( eno number,
+	    projects proj_list,
+      MEMBER FUNCTION projcnt RETURN INTEGER
+    );
+
+ex 2:
+CREATE OR REPLACE TYPE BODY emp_t AS MEMBER FUNCTION projcnt RETURN INTEGER IS 
+	    pcount INTEGER;
+	    BEGIN 
+		    SELECT count(p.projno) INTO pcount 
+		    FROM TABLE(self.projects) p;
+		    RETURN pcount; 
+	    END; 
+ 	END;
+	/
+
+#FINAL and NOT FINAL Types
+Example
+CREATE TYPE Person_type AS OBJECT
+	( pid NUMBER,
+ 	  name VARCHAR2(30),
+ 	  address VARCHAR2(100) )   NOT FINAL;	
+
+#Altering object type
+ALTER TYPE Person_type FINAL;
+
+#Creating Subtypes
+CREATE TYPE Student_type UNDER Person_type 
+	  ( deptid NUMBER,
+       major VARCHAR2(30)) NOT FINAL;
+/
+
+#Multiple child types
+CREATE TYPE Employee_type UNDER Person_type
+	  ( empid NUMBER, 
+  	    mgr VARCHAR2(30)
+    );
+/
+
+#Subtype under another subtype
+CREATE TYPE PartTimeStudent_type UNDER Student_type
+	(numhours NUMBER);
+
+#Table of supertype
+
+Creating a supertype table
+Create table person_tab of person_type
+(pid primary key);
+
+Inserting a subtype object/row
+Insert into person_tab values
+	( student_type(4, 'Edward Learn', 
+          '65 Marina Blvd, Ocean Surf, WA, 6725',
+          40, 'CS')
+   );
+
+#Selecting all instances
+Using VALUE() function 
+
+SELECT VALUE(p) FROM person_tab p; 
+
+#Selecting instances
+SELECT VALUE(s) 
+    FROM person_tab s 
+    WHERE VALUE(s) IS OF (Student_type);
+
+#Selecting a Subtype Attribute
+SELECT Name, TREAT(VALUE(p) AS PartTimeStudent_type).numhours hours
+	FROM person_tab p 
+	WHERE VALUE(p) IS OF (ONLY PartTimeStudent_type); 
+
+#NOT INSTANTIABLE Types 
+CREATE TYPE T AS OBJECT (
+	x NUMBER, 
+	NOT INSTANTIABLE MEMBER FUNCTION func1()* RETURN NUMBER ) NOT INSTANTIABLE NOT FINAL;
+  
+#FINAL and NOT FINAL Methods
+CREATE TYPE MyType AS OBJECT 
+    (  ..., 
+       MEMBER PROCEDURE Print,
+       FINAL MEMBER FUNCTION foo(x NUMBER) …, ...
+    )   NOT FINAL;
+/
+CREATE TYPE MySubType UNDER MyType 
+    ( ..., 
+      OVERRIDING MEMBER PROCEDURE Print, 
+	   ...);
+/
+
+#Overloading Methods
+Example:
+CREATE TYPE MyType AS OBJECT 
+	 ( ..., 
+	   MEMBER FUNCTION fun(x NUMBER)…, 
+	   ...) NOT FINAL;
+/ 
+CREATE TYPE MySubType UNDER MyType 
+	 ( ..., 
+      MEMBER FUNCTION fun(x DATE) …, 
+	   ...);
+/
